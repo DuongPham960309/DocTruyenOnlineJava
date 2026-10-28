@@ -1,4 +1,4 @@
-package com.example.server.modules.homepage.controller;
+package com.example.server.modules.homepage;
 
 import com.example.server.modules.homepage.dto.HomePageResponse;
 import com.example.server.modules.homepage.service.HomeService;
@@ -11,7 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
 
-public class HomeServlet extends HttpServlet {
+public class HomeController extends HttpServlet {
     private final HomeService homeService = new HomeService();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -19,8 +19,8 @@ public class HomeServlet extends HttpServlet {
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
 
-        // Đổi từ Map<String, Object> sang HomePageResponse
         HomePageResponse result = homeService.getHomePageData();
+
         objectMapper.writeValue(resp.getWriter(), result);
     }
 
@@ -28,9 +28,9 @@ public class HomeServlet extends HttpServlet {
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
 
-        Map<String, String> body = objectMapper.readValue(req.getInputStream(), new TypeReference<Map<String, String>>() {});
-
-        // Đổi từ Map<String, Object> sang HomePageResponse
+        Map<String, String> body = objectMapper.readValue(
+            req.getInputStream(), new TypeReference<Map<String, String>>() {}
+        );
         HomePageResponse result = homeService.postHomePageData(body);
 
         objectMapper.writeValue(resp.getWriter(), result);

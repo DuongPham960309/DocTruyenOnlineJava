@@ -3,8 +3,8 @@ package com.example.server.config;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
+import javax.sql.DataSource;
 
 public class DatabaseConfig {
     private static HikariDataSource dataSource;
