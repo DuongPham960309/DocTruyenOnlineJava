@@ -1,4 +1,4 @@
-package com.example.server.modules.homepage.service;
+package com.example.server.modules.homepage;
 
 import com.example.server.modules.homepage.dto.HomePageResponse;
 import com.example.server.modules.homepage.repository.HomeRepository;

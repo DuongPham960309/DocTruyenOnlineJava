@@ -1,7 +1,6 @@
 package com.example.server.modules.homepage;
 
 import com.example.server.modules.homepage.dto.HomePageResponse;
-import com.example.server.modules.homepage.service.HomeService;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServlet;
