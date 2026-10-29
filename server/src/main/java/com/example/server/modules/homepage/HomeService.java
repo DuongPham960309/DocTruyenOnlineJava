@@ -18,7 +18,8 @@ public class HomeService {
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-        formatData(data);
+        data.put("leftOfShortNovel", ((List<Map<String, String>>) data.get("leftOfShortNovel")).getFirst());
+        formatTrendNovels(data);
 
         return new HomePageResponse(lastUpdatedTime, data);
     }
@@ -27,24 +28,22 @@ public class HomeService {
         Map<String, String> lastUpdatedTime = new HashMap<>();
         Map<String, Object> data = new HashMap<>();
 
-        Map<String, Object> queriedDataWrapper = new HashMap<>();
-        queriedDataWrapper.put("lastUpdatedTime", lastUpdatedTime);
-        queriedDataWrapper.put("data", data);
+        Map<String, Object> responsePayload = new HashMap<>();
+        responsePayload.put("lastUpdatedTime", lastUpdatedTime);
+        responsePayload.put("data", data);
 
         homeRepository.fetchLastUpdatedTime(lastUpdatedTime);
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (String sectionName : homeRepository.getSectionNames()) {
             futures.add(CompletableFuture.runAsync(() ->
-                homeRepository.fetchSectionDataConditional(updatedTime, sectionName, queriedDataWrapper)
+                homeRepository.fetchSectionDataConditional(updatedTime, sectionName, responsePayload)
             ));
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
         if (!Objects.equals(updatedTime.get("leftOfShortNovel"), lastUpdatedTime.get("leftOfShortNovel"))) {
-            if (data.get("leftOfShortNovel") instanceof List<?> list && !list.isEmpty()) {
-                data.put("leftOfShortNovel", list.get(0));
-            }
+            data.put("leftOfShortNovel", ((List<Map<String, String>>) data.get("leftOfShortNovel")).getFirst());
         }
 
         if (!Objects.equals(updatedTime.get("trendNovelsInMonth"), lastUpdatedTime.get("trendNovelsInMonth"))) {
@@ -54,22 +53,14 @@ public class HomeService {
         return new HomePageResponse(lastUpdatedTime, data);
     }
 
-    private void formatData(Map<String, Object> data) {
-        if (data.get("leftOfShortNovel") instanceof List<?> list && !list.isEmpty()) {
-            data.put("leftOfShortNovel", list.get(0));
-        }
-        formatTrendNovels(data);
-    }
-
     private void formatTrendNovels(Map<String, Object> data) {
-        if (data.get("trendNovelsInMonth") instanceof List<?> list) {
-            List<String> names = new ArrayList<>();
-            for (Object obj : list) {
-                if (obj instanceof Map<?, ?> map && map.containsKey("name")) {
-                    names.add((String) map.get("name"));
-                }
-            }
-            data.put("trendNovelsInMonth", names);
+        List<Map<String, String>> list = (List<Map<String, String>>) data.get("trendNovelsInMonth");
+        List<String> names = new ArrayList<>();
+
+        for (Map<String, String> map : list) {
+            names.add(map.get("name"));
         }
+
+        data.put("trendNovelsInMonth", names);
     }
 }
