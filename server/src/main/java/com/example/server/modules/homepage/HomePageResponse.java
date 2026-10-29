@@ -1,4 +1,4 @@
-package com.example.server.modules.homepage.dto;
+package com.example.server.modules.homepage;
 
 import java.util.Map;
 

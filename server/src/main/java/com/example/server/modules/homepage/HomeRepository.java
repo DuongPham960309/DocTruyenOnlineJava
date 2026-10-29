@@ -1,4 +1,4 @@
-package com.example.server.modules.homepage.repository;
+package com.example.server.modules.homepage;
 
 import com.example.server.config.DatabaseConfig;
 

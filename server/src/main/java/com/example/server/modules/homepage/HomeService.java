@@ -1,8 +1,5 @@
 package com.example.server.modules.homepage;
 
-import com.example.server.modules.homepage.dto.HomePageResponse;
-import com.example.server.modules.homepage.repository.HomeRepository;
-
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -44,13 +41,13 @@ public class HomeService {
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-        if (updatedTime != null && !Objects.equals(updatedTime.get("leftOfShortNovel"), lastUpdatedTime.get("leftOfShortNovel"))) {
+        if (!Objects.equals(updatedTime.get("leftOfShortNovel"), lastUpdatedTime.get("leftOfShortNovel"))) {
             if (data.get("leftOfShortNovel") instanceof List<?> list && !list.isEmpty()) {
                 data.put("leftOfShortNovel", list.get(0));
             }
         }
 
-        if (updatedTime != null && !Objects.equals(updatedTime.get("trendNovelsInMonth"), lastUpdatedTime.get("trendNovelsInMonth"))) {
+        if (!Objects.equals(updatedTime.get("trendNovelsInMonth"), lastUpdatedTime.get("trendNovelsInMonth"))) {
             formatTrendNovels(data);
         }
 
