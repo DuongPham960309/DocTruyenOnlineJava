@@ -29,10 +29,11 @@ public class HomeRepository {
     }
 
     public void fetchLastUpdatedTime(Map<String, String> lastUpdatedTime) {
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT * FROM last_updated_time");
-             ResultSet rs = stmt.executeQuery()) {
-
+        try (
+            Connection conn = dataSource.getConnection();
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM last_updated_time");
+            ResultSet rs = stmt.executeQuery()
+        ) {
             while (rs.next()) {
                 lastUpdatedTime.put(rs.getString("section"), rs.getString("time"));
             }
@@ -42,25 +43,29 @@ public class HomeRepository {
     }
 
     public void fetchSectionData(Map<String, Object> data, String property) {
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(queryString.get(property));
-             ResultSet rs = stmt.executeQuery()) {
-
+        try (
+            Connection conn = dataSource.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(queryString.get(property));
+            ResultSet rs = stmt.executeQuery()
+        ) {
             data.put(property, resultSetToList(rs));
         } catch (Exception e) {
             System.err.println("\u001B[31m " + property + ": " + e.getMessage() + "\u001B[0m");
         }
     }
 
-    public void fetchSectionDataConditional(Map<String, String> updatedTime, String property, Map<String, Object> queriedData) {
-        Map<String, String> lastUpdatedTime = (Map<String, String>) queriedData.get("lastUpdatedTime");
-        Map<String, Object> data = (Map<String, Object>) queriedData.get("data");
+    public void fetchSectionDataConditional(
+        Map<String, String> updatedTime, String property, HomePageResponse responsePayload
+    ) {
+        Map<String, String> lastUpdatedTime = responsePayload.getLastUpdatedTime();
+        Map<String, Object> data = responsePayload.getData();
 
-        if (updatedTime != null && !Objects.equals(updatedTime.get(property), lastUpdatedTime.get(property))) {
-            try (Connection conn = dataSource.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(queryString.get(property));
-                 ResultSet rs = stmt.executeQuery()) {
-
+        if (!Objects.equals(updatedTime.get(property), lastUpdatedTime.get(property))) {
+            try (
+                Connection conn = dataSource.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(queryString.get(property));
+                ResultSet rs = stmt.executeQuery()
+            ) {
                 data.put(property, resultSetToList(rs));
             } catch (Exception e) {
                 System.err.println("\u001B[31m " + property + ": " + e.getMessage() + "\u001B[0m");
@@ -70,15 +75,19 @@ public class HomeRepository {
     }
 
     private List<Map<String, Object>> resultSetToList(ResultSet rs) throws Exception {
-        List<Map<String, Object>> list = new ArrayList<>();
         int columnCount = rs.getMetaData().getColumnCount();
+        List<Map<String, Object>> list = new ArrayList<>();
+
         while (rs.next()) {
             Map<String, Object> row = new LinkedHashMap<>();
+
             for (int i = 1; i <= columnCount; i++) {
                 row.put(rs.getMetaData().getColumnLabel(i), rs.getObject(i));
             }
+
             list.add(row);
         }
+
         return list;
     }
 }

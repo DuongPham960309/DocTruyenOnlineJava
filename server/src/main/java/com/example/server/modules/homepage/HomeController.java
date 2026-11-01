@@ -38,8 +38,6 @@ public class HomeController extends HttpServlet {
         HomePageResponse result = homeService.postHomePageData(body);
 
         objectMapper.writeValue(resp.getWriter(), result);
-
-        IO.println("end");
     }
 
     private Map<String, String> validateSections(HttpServletRequest req) {

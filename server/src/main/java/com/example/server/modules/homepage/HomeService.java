@@ -27,10 +27,7 @@ public class HomeService {
     public HomePageResponse postHomePageData(Map<String, String> updatedTime) {
         Map<String, String> lastUpdatedTime = new HashMap<>();
         Map<String, Object> data = new HashMap<>();
-
-        Map<String, Object> responsePayload = new HashMap<>();
-        responsePayload.put("lastUpdatedTime", lastUpdatedTime);
-        responsePayload.put("data", data);
+        HomePageResponse responsePayload = new HomePageResponse(lastUpdatedTime, data);
 
         homeRepository.fetchLastUpdatedTime(lastUpdatedTime);
 
@@ -50,7 +47,7 @@ public class HomeService {
             formatTrendNovels(data);
         }
 
-        return new HomePageResponse(lastUpdatedTime, data);
+        return responsePayload;
     }
 
     private void formatTrendNovels(Map<String, Object> data) {

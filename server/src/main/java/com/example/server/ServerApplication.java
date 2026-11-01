@@ -11,6 +11,7 @@ import org.springframework.boot.web.server.WebServer;
 
 import com.example.server.shared.middleware.CorsFilter;
 import com.example.server.shared.middleware.VerifyRequestFilter;
+import com.example.server.shared.middleware.RateLimitFilter;
 import com.example.server.modules.homepage.HomeController;
 
 public class ServerApplication {
@@ -38,6 +39,15 @@ public class ServerApplication {
 
             var filterHolder = servletContext.addFilter("verifyRequestFilter", new VerifyRequestFilter());
             filterHolder.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
+
+            var rateLimitHolder = servletContext.addFilter("rateLimitFilter", new RateLimitFilter(
+                15 * 60 * 1000L,
+                10000,
+                "Quá nhiều yêu cầu từ IP này, vui lòng thử lại sau 1 phút."
+            ));
+            rateLimitHolder.addMappingForUrlPatterns(
+                EnumSet.of(DispatcherType.REQUEST), true, "/*"
+            );
 
             var homeServletHolder = servletContext.addServlet("homeServlet", new HomeController());
             homeServletHolder.addMapping("/data");
