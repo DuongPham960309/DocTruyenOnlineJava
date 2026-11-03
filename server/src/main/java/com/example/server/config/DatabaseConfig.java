@@ -2,7 +2,6 @@ package com.example.server.config;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-
 import java.sql.Connection;
 import javax.sql.DataSource;
 
@@ -12,9 +11,12 @@ public class DatabaseConfig {
     static {
         try {
             HikariConfig config = new HikariConfig();
-            config.setJdbcUrl("jdbc:mysql://localhost:3306/doc_truyen_online?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC");
-            config.setUsername("root");
-            config.setPassword("123456");
+            config.setJdbcUrl(
+                "jdbc:mysql://" + EnvConfig.MYSQL_HOST + ":" + EnvConfig.MYSQL_PORT +
+                    "/" + EnvConfig.MYSQL_DATABASE + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+            );
+            config.setUsername(EnvConfig.MYSQL_USER);
+            config.setPassword(EnvConfig.MYSQL_PASSWORD);
             config.setMaximumPoolSize(10);
             config.setDriverClassName("com.mysql.cj.jdbc.Driver");
 

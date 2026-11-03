@@ -9,6 +9,7 @@ import java.util.EnumSet;
 import jakarta.servlet.DispatcherType;
 import org.springframework.boot.web.server.WebServer;
 
+import com.example.server.config.EnvConfig;
 import com.example.server.shared.middleware.CorsFilter;
 import com.example.server.shared.middleware.VerifyRequestFilter;
 import com.example.server.shared.middleware.RateLimitFilter;
@@ -16,7 +17,7 @@ import com.example.server.modules.homepage.HomeController;
 
 public class ServerApplication {
     public static void main(String[] args) {
-        int port = 4000;
+        int port = EnvConfig.PORT;
 
         TomcatServletWebServerFactory factory = new TomcatServletWebServerFactory(port);
 
