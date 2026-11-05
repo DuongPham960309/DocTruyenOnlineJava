@@ -1,22 +1,38 @@
 package com.example.server;
 
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
 import org.apache.catalina.webresources.StandardRoot;
 import java.io.File;
 import org.apache.catalina.webresources.DirResourceSet;
+import org.springframework.boot.web.server.servlet.ServletWebServerFactory;
 import org.springframework.boot.web.servlet.ServletContextInitializer;
 import java.util.EnumSet;
 import jakarta.servlet.DispatcherType;
-import org.springframework.boot.web.server.WebServer;
+
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import com.example.server.config.EnvConfig;
 import com.example.server.shared.middleware.CorsFilter;
 import com.example.server.shared.middleware.VerifyRequestFilter;
 import com.example.server.shared.middleware.RateLimitFilter;
-import com.example.server.modules.homepage.HomeController;
+import org.springframework.context.support.GenericApplicationContext;
 
+@SpringBootApplication
 public class ServerApplication {
     public static void main(String[] args) {
+        SpringApplication app = new SpringApplication(ServerApplication.class);
+
+        app.addInitializers((GenericApplicationContext context) -> {
+            context.registerBean(ServletWebServerFactory.class, () -> {
+                return factory();
+            });
+        });
+
+        app.run(args);
+    }
+
+    public static TomcatServletWebServerFactory factory() {
         int port = EnvConfig.PORT;
 
         TomcatServletWebServerFactory factory = new TomcatServletWebServerFactory(port);
@@ -50,9 +66,6 @@ public class ServerApplication {
                 EnumSet.of(DispatcherType.REQUEST), true, "/*"
             );
 
-            var homeServletHolder = servletContext.addServlet("homeServlet", new HomeController());
-            homeServletHolder.addMapping("/data");
-
             var staticServletHolder = servletContext.addServlet(
                 "default", "org.apache.catalina.servlets.DefaultServlet"
             );
@@ -60,9 +73,9 @@ public class ServerApplication {
             staticServletHolder.addMapping("/assets/*");
         };
 
-        WebServer webServer = factory.getWebServer(initializer);
-        webServer.start();
-
+        factory.addInitializers(initializer);
         System.out.println("\u001B[32m Server started on localhost:" + port + "\u001B[0m");
+
+        return factory;
     }
 }

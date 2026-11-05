@@ -8,12 +8,18 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+
 import com.example.server.shared.utils.JsonBodyReader;
 
+@RestController
 public class HomeController extends HttpServlet {
     private final HomeService homeService = new HomeService();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @GetMapping("/data")
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
@@ -23,6 +29,7 @@ public class HomeController extends HttpServlet {
         objectMapper.writeValue(resp.getWriter(), result);
     }
 
+    @PostMapping("/data")
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         Map<String, String> body = validateSections(req);
 
