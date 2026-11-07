@@ -1,18 +1,16 @@
 package com.example.server.modules.homepage;
 
+import org.springframework.http.ResponseEntity;
 import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-
-import com.example.server.shared.utils.JsonBodyReader;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 public class HomeController extends HttpServlet {
@@ -20,35 +18,24 @@ public class HomeController extends HttpServlet {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping("/data")
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setContentType("application/json");
-        resp.setCharacterEncoding("UTF-8");
-
-        HomePageResponse result = homeService.getHomePageData();
-
-        objectMapper.writeValue(resp.getWriter(), result);
+    public HomePageResponse getData() {
+        return homeService.getHomePageData();
     }
 
     @PostMapping("/data")
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        Map<String, String> body = validateSections(req);
+    public ResponseEntity<HomePageResponse> postData(@RequestBody(required = false) Map<String, Object> raw) {
+        Map<String, String> body = validateSections(raw);
 
         if (body == null) {
-            resp.setStatus(HttpServletResponse.SC_OK);
-
-            return;
+            return ResponseEntity.ok(null);
         }
-
-        resp.setContentType("application/json");
-        resp.setCharacterEncoding("UTF-8");
 
         HomePageResponse result = homeService.postHomePageData(body);
 
-        objectMapper.writeValue(resp.getWriter(), result);
+        return ResponseEntity.ok(result);
     }
 
-    private Map<String, String> validateSections(HttpServletRequest req) {
-        Map<String, Object> raw = JsonBodyReader.readObject(req);
+    private Map<String, String> validateSections(Map<String, Object> raw) {
         if (raw == null) {
             return null;
         }
