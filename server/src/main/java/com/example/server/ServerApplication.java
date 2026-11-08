@@ -13,7 +13,6 @@ import jakarta.servlet.DispatcherType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import com.example.server.config.EnvConfig;
-import com.example.server.shared.middleware.CorsFilter;
 import com.example.server.shared.middleware.VerifyRequestFilter;
 import com.example.server.shared.middleware.RateLimitFilter;
 import org.springframework.context.support.GenericApplicationContext;
@@ -49,11 +48,6 @@ public class ServerApplication {
         });
 
         ServletContextInitializer initializer = servletContext -> {
-            var corsFilterHolder = servletContext.addFilter("corsFilter", new CorsFilter());
-            corsFilterHolder.addMappingForUrlPatterns(
-                EnumSet.of(DispatcherType.REQUEST), true, "/*"
-            );
-
             var filterHolder = servletContext.addFilter("verifyRequestFilter", new VerifyRequestFilter());
             filterHolder.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
 
