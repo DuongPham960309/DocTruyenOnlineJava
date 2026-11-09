@@ -38,9 +38,6 @@ public class ServerApplication {
         TomcatServletWebServerFactory factory = new TomcatServletWebServerFactory(port);
 
         ServletContextInitializer initializer = servletContext -> {
-            var filterHolder = servletContext.addFilter("verifyRequestFilter", new VerifyRequestFilter());
-            filterHolder.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
-
             var rateLimitHolder = servletContext.addFilter("rateLimitFilter", new RateLimitFilter(
                 15 * 60 * 1000L,
                 10000,

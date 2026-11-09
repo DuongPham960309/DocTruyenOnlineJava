@@ -1,12 +1,13 @@
 package com.example.server.shared.middleware;
 
-import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -14,15 +15,25 @@ import java.security.MessageDigest;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import java.security.NoSuchAlgorithmException;
+import java.util.regex.Pattern;
 
-public class VerifyRequestFilter implements Filter {
-    public void doFilter(
-        ServletRequest req, ServletResponse res, FilterChain chain
-    ) throws IOException, ServletException {
-        HttpServletResponse response = (HttpServletResponse) res;
+@Component
+@Order(Ordered.HIGHEST_PRECEDENCE + 1)
+public class VerifyRequestFilter extends OncePerRequestFilter {
+    private static final long MAX_TIME_DIFFERENCE_MS = 10_000;
+    private static final Pattern X_KEY_PATTERN = Pattern.compile("[0-9a-fA-F]{80}");
+    private static final int HEX = 16;
+    private static final int TIME_LENGTH = 16;
+    private static final BigInteger MASK_64 = BigInteger.ONE.shiftLeft(64).subtract(BigInteger.ONE);
 
+    private record ClientKey(String signature, long timeMs) {}
+
+    @Override
+    protected void doFilterInternal(
+        HttpServletRequest request, HttpServletResponse response, FilterChain chain
+    ) throws ServletException, IOException {
         long serverTime = System.currentTimeMillis();
-        String xKey = getValidXKey((HttpServletRequest) req);
+        String xKey = getValidXKey(request);
 
         if (xKey == null) {
             response.setStatus(HttpServletResponse.SC_OK);
@@ -30,74 +41,57 @@ public class VerifyRequestFilter implements Filter {
             return;
         }
 
-        Object[] parsed = getClientSignatureAndTimeMS(xKey);
-        String clientSignature = (String) parsed[0];
-        long clientTime = (Long) parsed[1];
+        ClientKey client = getClientSignatureAndTimeMS(xKey);
+        boolean timeOk = Math.abs(serverTime - client.timeMs) < MAX_TIME_DIFFERENCE_MS;
+        String serverSignature = sha256(client.timeMs + "|ConstantString");
+        boolean signatureOk = MessageDigest.isEqual(
+            serverSignature.getBytes(StandardCharsets.UTF_8),
+            client.signature.getBytes(StandardCharsets.UTF_8)
+        );
+        // Lưu ý: Phương thức equals của class String dễ bị tấn công thời gian (timing attack).
+        // Phương thức này dừng ngay khi gặp ký tự đầu tiên khác nhau, nên kẻ tấn công có thể
+        // đo thời gian phản hồi để đoán dần từng ký tự.
 
-        long timeDifference = Math.abs(serverTime - clientTime);
-        String serverSignature = sha256(clientTime + "|ConstantString");
-
-        if (timeDifference < 10000 && serverSignature.equalsIgnoreCase(clientSignature)) {
-            chain.doFilter(req, res);
+        if (timeOk && signatureOk) {
+            chain.doFilter(request, response);
         } else {
             response.setStatus(HttpServletResponse.SC_OK);
         }
     }
 
     private String getValidXKey(HttpServletRequest request) {
-        final int X_KEY_LENGTH = 80;
         String xKey = request.getHeader("x-key");
 
         if (xKey == null) {
             xKey = request.getParameter("x-key");
         }
 
-        if (xKey == null || xKey.length() != X_KEY_LENGTH) {
-            return null;
-        }
-
-        for (int i = 0; i < xKey.length(); i++) {
-            char c = xKey.charAt(i);
-            boolean ok = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-
-            if (!ok) {
-                return null;
-            }
-        }
-
-        return xKey;
+        return (xKey != null && X_KEY_PATTERN.matcher(xKey).matches()) ? xKey : null;
     }
 
-    private Object[] getClientSignatureAndTimeMS(String key) {
-        int baseHexadecimal = 16;
-        int timeOffsetPosition = Integer.parseInt(String.valueOf(key.charAt(0)), baseHexadecimal);
-        int timeStart = 1 + timeOffsetPosition;
-        int timeLength = 16;
+    private ClientKey getClientSignatureAndTimeMS(String key) {
+        int timeStart = 1 + Character.digit(key.charAt(0), HEX);
+        String signature = key.substring(0, timeStart) + key.substring(timeStart + TIME_LENGTH);
 
-        String clientSignature = key.substring(0, timeStart) + key.substring(timeStart + timeLength);
+        String timeObfuscateStr = key.substring(timeStart, timeStart + TIME_LENGTH);
+        BigInteger timeObfuscate = new BigInteger(timeObfuscateStr, HEX);
+        BigInteger inverted = timeObfuscate.xor(MASK_64);
 
-        String timeObfuscateStr = key.substring(timeStart, timeStart + timeLength);
-        BigInteger timeObfuscate = new BigInteger(timeObfuscateStr, 16);
-
-        BigInteger mask64 = BigInteger.ONE.shiftLeft(64).subtract(BigInteger.ONE);
-        BigInteger inverted = timeObfuscate.xor(mask64);
-
-        int secretHexPosition = Integer.parseInt(String.valueOf(clientSignature.charAt(7)), baseHexadecimal);
-        String secretHexStr = clientSignature.substring(secretHexPosition, secretHexPosition + timeLength);
-        BigInteger secretHex = new BigInteger(secretHexStr, 16);
+        int secretPosition = Character.digit(signature.charAt(7), HEX);
+        String secretHexStr = signature.substring(secretPosition, secretPosition + TIME_LENGTH);
+        BigInteger secretHex = new BigInteger(secretHexStr, HEX);
 
         long timeMS = inverted.xor(secretHex).longValue();
 
-        return new Object[]{clientSignature, timeMS};
+        return new ClientKey(signature, timeMS);
     }
 
     private String sha256(String base) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(base.getBytes(StandardCharsets.UTF_8));
-            String hex = HexFormat.of().formatHex(hash);
 
-            return hex;
+            return HexFormat.of().formatHex(hash);
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("SHA-256 không khả dụng", ex);
         }
