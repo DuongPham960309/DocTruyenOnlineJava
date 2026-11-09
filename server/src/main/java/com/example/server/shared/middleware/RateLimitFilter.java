@@ -1,18 +1,38 @@
 package com.example.server.shared.middleware;
 
-import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class RateLimitFilter implements Filter {
+@Configuration
+public class RateLimitFilter {
+    @Bean
+    public FilterRegistrationBean<RateLimitCore> rateLimit() {
+        FilterRegistrationBean<RateLimitCore> registration = new FilterRegistrationBean<>(new RateLimitCore(
+            15 * 60 * 1000L,
+            10000,
+            "Quá nhiều yêu cầu từ IP này, vui lòng thử lại sau 15 phút."
+        ));
+
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 2);
+
+        return registration;
+    }
+}
+
+class RateLimitCore extends OncePerRequestFilter {
     private record Hit(long resetTime, int count) {}
 
     private final long windowMs;
@@ -20,21 +40,19 @@ public class RateLimitFilter implements Filter {
     private final String message;
     private final ConcurrentHashMap<String, Hit> hits = new ConcurrentHashMap<>();
 
-    public RateLimitFilter(long windowMs, int max, String message) {
+    public RateLimitCore(long windowMs, int max, String message) {
         this.windowMs = windowMs;
         this.max = max;
         this.message = message;
     }
 
-    public void doFilter(
-        ServletRequest req, ServletResponse res, FilterChain chain
-    ) throws IOException, ServletException {
-        HttpServletRequest request = (HttpServletRequest) req;
-        HttpServletResponse response = (HttpServletResponse) res;
-
+    @Override
+    protected void doFilterInternal(
+        HttpServletRequest request, HttpServletResponse response, FilterChain chain
+    ) throws ServletException, IOException {
         long now = System.currentTimeMillis();
 
-        if (hits.size() > 10000) {
+        if (hits.size() > 10_000) {
             hits.values().removeIf(hit -> hit.resetTime() <= now);
         }
 
@@ -59,7 +77,7 @@ public class RateLimitFilter implements Filter {
             return;
         }
 
-        chain.doFilter(req, res);
+        chain.doFilter(request, response);
     }
 
     private String getClientIp(HttpServletRequest request) {

@@ -6,7 +6,7 @@ public class EnvConfig {
     public static final String CLIENT_ORIGIN;
 
     public static final String HOST;
-    public static final int PORT;
+    public static final String PORT;
 
     public static final String MYSQL_HOST;
     public static final int MYSQL_PORT;
@@ -21,7 +21,7 @@ public class EnvConfig {
         CLIENT_ORIGIN = dotenv.get("CLIENT_ORIGIN");
 
         HOST = dotenv.get("HOST");
-        PORT = Integer.parseInt(dotenv.get("PORT"));
+        PORT = dotenv.get("PORT");
 
         MYSQL_HOST = dotenv.get("MYSQL_HOST");
         MYSQL_PORT = Integer.parseInt(dotenv.get("MYSQL_PORT"));
