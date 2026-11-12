@@ -4,8 +4,9 @@ import org.springframework.boot.SpringApplication;
 import java.util.Map;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import com.example.server.config.EnvConfig;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
 public class ServerApplication {
     public static void main(String[] args) {
         SpringApplication app = new SpringApplication(ServerApplication.class);

@@ -1,15 +1,12 @@
 package com.example.server.modules.homepage;
 
 import com.example.server.config.DatabaseConfig;
+import org.springframework.jdbc.core.JdbcTemplate;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.*;
 
 public class HomeRepository {
-    private final DataSource dataSource = DatabaseConfig.getDataSource();
+    private final JdbcTemplate jdbcTemplate = new JdbcTemplate(DatabaseConfig.getDataSource());
 
     private final Map<String, String> queryString = Map.of(
         "suggestedNovels", "SELECT novels.name, novels.before, novels.after, novels.image, suggested_novels.chapter FROM suggested_novels JOIN novels ON suggested_novels.name = novels.name ORDER BY id",
@@ -28,66 +25,27 @@ public class HomeRepository {
         return queryString.keySet();
     }
 
-    public void fetchLastUpdatedTime(Map<String, String> lastUpdatedTime) {
-        try (
-            Connection conn = dataSource.getConnection();
-            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM last_updated_time");
-            ResultSet rs = stmt.executeQuery()
-        ) {
-            while (rs.next()) {
+    public Map<String, String> fetchLastUpdatedTime() {
+        Map<String, String> lastUpdatedTime = new HashMap<>();
+
+        try {
+            jdbcTemplate.query("SELECT * FROM last_updated_time", rs -> {
                 lastUpdatedTime.put(rs.getString("section"), rs.getString("time"));
-            }
+            });
         } catch (Exception e) {
             System.err.println("\u001B[31m lastUpdatedTime: " + e.getMessage() + "\u001B[0m");
         }
+
+        return lastUpdatedTime;
     }
 
-    public void fetchSectionData(Map<String, Object> data, String property) {
-        try (
-            Connection conn = dataSource.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(queryString.get(property));
-            ResultSet rs = stmt.executeQuery()
-        ) {
-            data.put(property, resultSetToList(rs));
+    public List<Map<String, Object>> fetchSectionData(String property) {
+        try {
+            return jdbcTemplate.queryForList(queryString.get(property));
         } catch (Exception e) {
             System.err.println("\u001B[31m " + property + ": " + e.getMessage() + "\u001B[0m");
+
+            return null;
         }
-    }
-
-    public void fetchSectionDataConditional(
-        Map<String, String> updatedTime, String property, HomePageResponse responsePayload
-    ) {
-        Map<String, String> lastUpdatedTime = responsePayload.getLastUpdatedTime();
-        Map<String, Object> data = responsePayload.getData();
-
-        if (!Objects.equals(updatedTime.get(property), lastUpdatedTime.get(property))) {
-            try (
-                Connection conn = dataSource.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(queryString.get(property));
-                ResultSet rs = stmt.executeQuery()
-            ) {
-                data.put(property, resultSetToList(rs));
-            } catch (Exception e) {
-                System.err.println("\u001B[31m " + property + ": " + e.getMessage() + "\u001B[0m");
-                lastUpdatedTime.put(property, updatedTime.get(property));
-            }
-        }
-    }
-
-    private List<Map<String, Object>> resultSetToList(ResultSet rs) throws Exception {
-        int columnCount = rs.getMetaData().getColumnCount();
-        List<Map<String, Object>> list = new ArrayList<>();
-
-        while (rs.next()) {
-            Map<String, Object> row = new LinkedHashMap<>();
-
-            for (int i = 1; i <= columnCount; i++) {
-                row.put(rs.getMetaData().getColumnLabel(i), rs.getObject(i));
-            }
-
-            list.add(row);
-        }
-
-        return list;
     }
 }
