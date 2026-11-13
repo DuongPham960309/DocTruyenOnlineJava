@@ -1,16 +1,16 @@
 package com.example.server.config;
 
+import javax.sql.DataSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import java.sql.Connection;
-import javax.sql.DataSource;
 
 public class DatabaseConfig {
-    private static HikariDataSource dataSource;
+    public static final DataSource DATA_SOURCE = createDataSource();
 
-    static {
+    private static HikariDataSource createDataSource() {
         try {
             HikariConfig config = new HikariConfig();
+
             config.setJdbcUrl(
                 "jdbc:mysql://" + EnvConfig.MYSQL_HOST + ":" + EnvConfig.MYSQL_PORT +
                     "/" + EnvConfig.MYSQL_DATABASE + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
@@ -20,18 +20,15 @@ public class DatabaseConfig {
             config.setMaximumPoolSize(10);
             config.setDriverClassName("com.mysql.cj.jdbc.Driver");
 
-            dataSource = new HikariDataSource(config);
+            HikariDataSource dataSource = new HikariDataSource(config);
 
-            try (Connection conn = dataSource.getConnection()) {
-                System.out.println("\u001B[32m MySQL connection established successfully!\u001B[0m");
-            }
+            System.out.println("\u001B[32m MySQL connection established successfully!\u001B[0m");
+
+            return dataSource;
         } catch (Exception e) {
-            System.err.println("\u001B[31m Error: Failed to connect to MySQL Server! IS YOUR MYSQL SERVICE RUNNING?\u001B[0m");
-            System.err.println("\u001B[31m Details: " + e.getMessage() + "\u001B[0m");
+            throw new IllegalStateException(
+                "Failed to connect to MySQL Server! IS YOUR MYSQL SERVICE RUNNING?", e
+            );
         }
-    }
-
-    public static DataSource getDataSource() {
-        return dataSource;
     }
 }

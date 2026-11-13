@@ -6,7 +6,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import java.util.*;
 
 public class HomeRepository {
-    private final JdbcTemplate jdbcTemplate = new JdbcTemplate(DatabaseConfig.getDataSource());
+    private final JdbcTemplate jdbcTemplate = new JdbcTemplate(DatabaseConfig.DATA_SOURCE);
 
     private final Map<String, String> queryString = Map.of(
         "suggestedNovels", "SELECT novels.name, novels.before, novels.after, novels.image, suggested_novels.chapter FROM suggested_novels JOIN novels ON suggested_novels.name = novels.name ORDER BY id",
