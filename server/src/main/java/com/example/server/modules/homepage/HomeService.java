@@ -14,10 +14,9 @@ public class HomeService {
         for (String sectionName : homeRepository.getSectionNames()) {
             futures.put(sectionName, CompletableFuture.supplyAsync(() -> homeRepository.fetchSectionData(sectionName)));
         }
-        futures.forEach((sectionName, future) -> data.put(sectionName, future.join()));
-
-        data.put("leftOfShortNovel", ((List<Map<String, String>>) data.get("leftOfShortNovel")).getFirst());
-        formatTrendNovels(data);
+        futures.forEach((sectionName, future) -> {
+            data.put(sectionName, format(sectionName, future.join()));
+        });
 
         return new HomePageResponse(lastUpdatedTime, data);
     }
@@ -37,32 +36,25 @@ public class HomeService {
             }));
         }
         futures.forEach((sectionName, future) -> {
-            data.put(sectionName, future.join());
+            data.put(sectionName, format(sectionName, future.join()));
 
             if (data.get(sectionName) == null) {
                 lastUpdatedTime.put(sectionName, updatedTime.get(sectionName));
             }
         });
 
-        if (!Objects.equals(updatedTime.get("leftOfShortNovel"), lastUpdatedTime.get("leftOfShortNovel"))) {
-            data.put("leftOfShortNovel", ((List<Map<String, String>>) data.get("leftOfShortNovel")).getFirst());
-        }
-
-        if (!Objects.equals(updatedTime.get("trendNovelsInMonth"), lastUpdatedTime.get("trendNovelsInMonth"))) {
-            formatTrendNovels(data);
-        }
-
         return new HomePageResponse(lastUpdatedTime, data);
     }
 
-    private void formatTrendNovels(Map<String, Object> data) {
-        List<Map<String, String>> list = (List<Map<String, String>>) data.get("trendNovelsInMonth");
-        List<String> names = new ArrayList<>();
-
-        for (Map<String, String> map : list) {
-            names.add(map.get("name"));
+    private Object format(String sectionName, List<Map<String, Object>> rows) {
+        if (rows == null) {
+            return null;
         }
 
-        data.put("trendNovelsInMonth", names);
+        return switch (sectionName) {
+            case "leftOfShortNovel" -> rows.getFirst();
+            case "trendNovelsInMonth" -> rows.stream().map(row -> row.get("name")).toList();
+            default -> rows;
+        };
     }
 }
