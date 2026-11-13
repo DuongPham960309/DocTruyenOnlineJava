@@ -1,5 +1,6 @@
 package com.example.server;
 
+
 import org.springframework.boot.SpringApplication;
 import java.util.Map;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
